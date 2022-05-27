@@ -12,7 +12,7 @@ endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 #add_executable(main main.cpp)
- add_executable(main test.cpp)
+add_executable(main 00.cpp)
 # add_executable(main test1.cpp)
 
 
