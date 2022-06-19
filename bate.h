@@ -12,6 +12,7 @@
 #include <chrono>
 #include <map>
 #include <unordered_map>
+#include <memory>
 
 namespace bate {
 
