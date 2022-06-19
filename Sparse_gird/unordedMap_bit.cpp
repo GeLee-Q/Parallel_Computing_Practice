@@ -29,8 +29,8 @@ struct Grid {
 
     std::unordered_map<std::tuple<int,int>, Block, MyHash> m_data;
     //映射 位置----> 数值块
-    // x / B , y / B 可以确定是哪一个块
-    // x % B , y % B 则可以确定是块中的哪一个位置
+    // x / B , y / B 可以确定是哪一个块（可以把这个看作是一个压缩的过程）
+    // x % B , y % B 则可以确定是块中的哪一个位置（可以把这个看作是一个信息还原的过程）
 
 
     char read(int x, int y) const{
