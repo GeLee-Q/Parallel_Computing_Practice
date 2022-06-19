@@ -1,0 +1,21 @@
+enable_language(CXX)
+# 批量的自动查找所有的.cpp 和 .h 文件
+file(GLOB mylib_sources CONFIGURE_DEPENDS mylib/*.cpp mylib/*.h)
+
+# 将mylib设置为动态库
+# 当dll和exe不在同一目录时，只会查找exe所在目录和PATH
+add_library(mylib SHARED ${mylib_sources})
+set_property(TARGET mylib PROPERTY RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_property(TARGET mylib PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_property(TARGET mylib PROPERTY LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_property(TARGET mylib PROPERTY RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_BINARY_DIR})
+set_property(TARGET mylib PROPERTY ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${PROJECT_BINARY_DIR})
+set_property(TARGET mylib PROPERTY LIBRARY_OUTPUT_DIRECTORY_DEBUG ${PROJECT_BINARY_DIR})
+set_property(TARGET mylib PROPERTY RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_BINARY_DIR})
+set_property(TARGET mylib PROPERTY ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_BINARY_DIR})
+set_property(TARGET mylib PROPERTY LIBRARY_OUTPUT_DIRECTORY_RELEASE ${PROJECT_BINARY_DIR})
+
+
+target_compile_definitions(mylib PRIVATE MYLIB_EXPORT)
+#设置额外的头文件查找目录
+target_include_directories(mylib PUBLIC .)
