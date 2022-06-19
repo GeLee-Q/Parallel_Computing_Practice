@@ -1,18 +1,24 @@
+
+- [**CMake 工程构建**](#cmake-工程构建)
+- [康威生命游戏优化](#康威生命游戏优化)
+  - [代码环境](#代码环境)
+  - [实验优化记录](#实验优化记录)
+  - [优化**方法总结**](#优化方法总结)
+
 # **CMake 工程构建**
 
 - src        源码文件
 - mylib    包含源码所需要的头文件
-- sparse_data_structure 稀疏数据结构代码
+- sparse_data_structure 稀疏数据结构案例代码
 - 顶层CMakeLists.txt 构造项目
 
-# 康威声明游戏优化
+# 康威生命游戏优化
 
 ## 代码环境
 
 > WSL + GCC 9.2
 
-> Parallel_Computing_Practice/src/Conway_Game_of_Life.cpp
-
+> src/Conway_Game_of_Life.cpp
 ## 实验优化记录
 
 - 原始代码未开启openMP
