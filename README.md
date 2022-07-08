@@ -9,6 +9,13 @@
   - [pod.h](#podh)
   - [alignalloc.h | alignalloc_msvc.h](#alignalloch--alignalloc_msvch)
   - [ndarray.h | ndarray_msvc.h](#ndarrayh--ndarray_msvch)
+- [memory_optimization](#memory_optimization)
+  - [xy_yx_loop.cpp](#xy_yx_loopcpp)
+  - [matrix_alloc.cpp](#matrix_alloccpp)
+  - [cache_skip.cpp](#cache_skipcpp)
+  - [aosoa.cpp](#aosoacpp)
+  - [prefetch.cpp](#prefetchcpp)
+  - [write_read.cpp | write_read_msvc.cpp](#write_readcpp--write_read_msvccpp)
 
 # **CMake 工程构建**
 
@@ -128,3 +135,50 @@ tbb     17.48s    加速：7.66x
 
     template <class ...Ts, std::enable_if_t<sizeof...(Ts) == N && std::conjunction_v<std::is_integral<Ts>...> , int> = 0>
 ```
+
+
+
+# memory_optimization
+
+https://quick-bench.com/ benchmark在线测试网站
+
+## xy_yx_loop.cpp
+
+- 验证xy序 和 yx序
+
+## matrix_alloc.cpp
+
+- STL容器的多维数组alloc 和 展开的多维数组alloc数组速度比较
+
+## cache_skip.cpp
+
+- 验证缓存的读写机制
+
+## aosoa.cpp
+
+- AOS（Array of Struct）单个对象的属性紧挨着存
+- SOA（Struct of Array）属性分离存储在多个数组
+-  MyClass 内部是 SOA，外部仍是一个 `vector<MyClass>` 的 AOS——这种内存布局称为 AOSOA。
+- **如果几个属性几乎总是同时一起用的**，比如位置矢量pos的xyz分量，可能都是同时读取同时修改的，这时用**AOS**，减轻预取压力。
+- **如果几个属性有时只用到其中几个，不一定同时写入**，这时候就用**SOA**比较好，省内存带宽。
+- **AOSOA**：在高层保持AOS的统一索引，底层又享受SOA带来的矢量化和缓存行预取等好处
+
+## prefetch.cpp
+
+> 解决随机的预取问题
+
+- 缓存行预取技术：由硬件自动识别程序的访存规律，决定要预取的地址。一般来说只有线性的地址访问规律（包括顺序、逆序；连续、跨步）能被识别出来，而**如果访存是随机的，那就没办法预测**。
+- 为了解决随机访问的问题，把分块的大小调的更大一些，比如 4KB 那么大，即64个缓存行，而不是一个。每次随机出来的是块的位置。
+- 预取不能跨越页边界，否则可能会触发不必要的 page fault。所以选取页的大小，因为本来就不能跨页顺序预取，所以被我们切断掉也无所谓。
+
+## write_read.cpp | write_read_msvc.cpp
+
+> 为写入花的时间比读取慢：写入的粒度太小，浪费了缓存行的代码
+
+- https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
+
+- 绕过缓存，直接写入：`_mm_stream_si32`，代替直接赋值的写入，绕开缓存**，将一个4字节的写入操作，挂起到临时队列，等凑满64字节后，直接写入内存，从而完全避免读的带宽。只支持int做参数，要用float还得转换一下指针类型，bitcast一下参数。
+
+- stream特点：不会读到缓存里， 最好是连续的写入
+- 1.只有写入，没有读取 2.之后没有再读取该数组 才应该使用`stream`指令
+- `_mm_stream_si32` 可以一次性写入4字节到挂起队列。而 `_mm_stream_ps` 可以一次性写入 16 字节到挂起队列。
