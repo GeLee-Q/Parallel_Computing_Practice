@@ -50,6 +50,12 @@ file(GLOB_RECURSE main_sources CONFIGURE_DEPENDS src/*.cpp)
 add_executable(main ${main_sources})
 target_link_libraries(main PRIVATE mylib)
 
+find_package(benchmark)
+if (TARGET benchmark::benchmark)
+    target_link_libraries(main PUBLIC benchmark::benchmark)
+else()
+    message(WARNING "benchmark not found")
+endif()
 
 
 find_package(OpenMP)

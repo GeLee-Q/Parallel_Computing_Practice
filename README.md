@@ -13,7 +13,7 @@
 # **CMake 工程构建**
 
 - src        源码文件
-- mylib    包含源码所需要的头文件
+- mylib     包含各种功能的头文件
 - sparse_data_structure 稀疏数据结构案例代码
 - 顶层CMakeLists.txt 构造项目
 
