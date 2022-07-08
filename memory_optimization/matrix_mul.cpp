@@ -67,3 +67,6 @@ void BM_matmul_blocked_both(benchmark::State& bm) {
 BENCHMARK(BM_matmul_blocked_both);
 
 BENCHMARK_MAIN();
+
+
+
