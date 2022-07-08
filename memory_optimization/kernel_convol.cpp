@@ -21,13 +21,16 @@ ndarray<2, float> a(n, n);
 ndarray<2, float, nkern> b(n, n);
 ndarray<2, float> c(nkern, nkern);
 
+
+
+
 void BM_convol(benchmark::State &bm) {
     for (auto _: bm) {
         for (int j = 0; j < n; j++) {
             for (int i = 0; i < n; i++) {
                 for (int l = 0; l < nkern; l++) {
                     for (int k = 0; k < nkern; k++) {
-                        a(i, j) += b(i + k, j + l) * c(i, j);
+                        a(i, j) += b(i + k, j + l) * c(k, l);
                     }
                 }
             }

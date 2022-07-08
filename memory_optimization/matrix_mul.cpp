@@ -11,9 +11,9 @@
 #include <array>
 #include <benchmark/benchmark.h>
 #include <omp.h>
-#include "ndarray.h"
-#include "wangsrng.h"
-#include "ticktock.h"
+
+#include <mylib/ndarray.h>
+#include <mylib/ticktock.h>
 
 constexpr int n = 1 << 10;
 

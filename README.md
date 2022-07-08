@@ -1,36 +1,45 @@
-- [**CMake 工程构建**](#cmake-工程构建)
-- [康威生命游戏优化](#康威生命游戏优化)
+- [代码库说明](#代码库说明)
+- [康威声明游戏优化](#康威声明游戏优化)
   - [代码环境](#代码环境)
   - [实验优化记录](#实验优化记录)
   - [优化**方法总结**](#优化方法总结)
-- [Mylib](#mylib)
+- [MYLIB](#mylib)
   - [ticktock.h | bate.h | mtprint.h](#ticktockh--bateh--mtprinth)
   - [snode.h](#snodeh)
   - [pod.h](#podh)
   - [alignalloc.h | alignalloc_msvc.h](#alignalloch--alignalloc_msvch)
   - [ndarray.h | ndarray_msvc.h](#ndarrayh--ndarray_msvch)
-- [memory_optimization](#memory_optimization)
+- [Memory_optimization](#memory_optimization)
   - [xy_yx_loop.cpp](#xy_yx_loopcpp)
   - [matrix_alloc.cpp](#matrix_alloccpp)
   - [cache_skip.cpp](#cache_skipcpp)
   - [aosoa.cpp](#aosoacpp)
   - [prefetch.cpp](#prefetchcpp)
   - [write_read.cpp | write_read_msvc.cpp](#write_readcpp--write_read_msvccpp)
+  - [false_sharing.cpp](#false_sharingcpp)
+  - [matrix_mul.cpp](#matrix_mulcpp)
+  - [kernel_convol.cpp](#kernel_convolcpp)
 
-# **CMake 工程构建**
+# 代码库说明
 
-- src        源码文件
-- mylib     包含各种功能的头文件
-- sparse_data_structure 稀疏数据结构案例代码
+> 康威生命游戏优化
+>
+> X86_CPU矩阵乘法优化 小内核卷积优化
+
+- src        康威生命游戏源码文件
+- mylib    包含各种功能的头文件
+- sparse_data_structure 稀疏数据结构代码
+- memory_optimization 访存优化代码（矩阵乘法优化，小内核卷积优化）
 - 顶层CMakeLists.txt 构造项目
 
-# 康威生命游戏优化
+# 康威声明游戏优化
 
 ## 代码环境
 
 > WSL + GCC 9.2
 
-> src/Conway_Game_of_Life.cpp
+> Parallel_Computing_Practice/src/Conway_Game_of_Life.cpp
+
 ## 实验优化记录
 
 - 原始代码未开启openMP
@@ -85,10 +94,7 @@ tbb     17.48s    加速：7.66x
 
 
 
-
-
-
-# Mylib
+# MYLIB
 
 ## ticktock.h | bate.h | mtprint.h
 
@@ -119,7 +125,7 @@ tbb     17.48s    加速：7.66x
 ## ndarray.h | ndarray_msvc.h
 
 - ZYX 序：(z * ny + y) * nx + x , 避免手动扁平化高维数组，封装成类
--  ndarray<2, float>  二维浮点数组，ndarray<3, int> 三维整型数组。
+- ndarray<2, float>  二维浮点数组，ndarray<3, int> 三维整型数组。
 - 解决访问越界问题，增加额外的参数，控制边界层的大小
 
 ​	`consexptr int nblur = 8 ;  ndarray<2, float, nblur> a(nx, ny);`
@@ -138,27 +144,33 @@ tbb     17.48s    加速：7.66x
 
 
 
-# memory_optimization
+
+
+# Memory_optimization
 
 https://quick-bench.com/ benchmark在线测试网站
 
+https://github.com/google/benchmark
+
 ## xy_yx_loop.cpp
 
-- 验证xy序 和 yx序
+> 验证xy序 和 yx序
 
 ## matrix_alloc.cpp
 
-- STL容器的多维数组alloc 和 展开的多维数组alloc数组速度比较
+> STL容器的多维数组alloc 和 展开的多维数组alloc数组速度比较
 
 ## cache_skip.cpp
 
-- 验证缓存的读写机制
+> 验证缓存的读写机制
 
-## aosoa.cpp
+## aosoa.cpp 
+
+>  数据结构的底层矢量化和缓存行预取
 
 - AOS（Array of Struct）单个对象的属性紧挨着存
 - SOA（Struct of Array）属性分离存储在多个数组
--  MyClass 内部是 SOA，外部仍是一个 `vector<MyClass>` 的 AOS——这种内存布局称为 AOSOA。
+- MyClass 内部是 SOA，外部仍是一个 `vector<MyClass>` 的 AOS——这种内存布局称为 AOSOA。
 - **如果几个属性几乎总是同时一起用的**，比如位置矢量pos的xyz分量，可能都是同时读取同时修改的，这时用**AOS**，减轻预取压力。
 - **如果几个属性有时只用到其中几个，不一定同时写入**，这时候就用**SOA**比较好，省内存带宽。
 - **AOSOA**：在高层保持AOS的统一索引，底层又享受SOA带来的矢量化和缓存行预取等好处
@@ -182,3 +194,83 @@ https://quick-bench.com/ benchmark在线测试网站
 - stream特点：不会读到缓存里， 最好是连续的写入
 - 1.只有写入，没有读取 2.之后没有再读取该数组 才应该使用`stream`指令
 - `_mm_stream_si32` 可以一次性写入4字节到挂起队列。而 `_mm_stream_ps` 可以一次性写入 16 字节到挂起队列。
+
+## false_sharing.cpp
+
+> 如何消除伪共享
+
+- CPU为了安全起见，同时只能允许一个核心写入同一地址的缓存行。从而导致读写这个变量的速度受限于三级缓存的速度，而不是一级缓存的速度。
+- 消除错误共享很简单，只需要把每个核心写入的地址尽可能分散开了就行了。
+- 错误共享只会发生在**写入**的情况，如果多个核心同时**读取**两个很靠近的变量，是不会产生冲突的，也没有性能损失。
+
+## matrix_mul.cpp 
+
+> 如何与优化矩阵乘法
+
+- 寄存器分块（类似循环分块）
+- `a(i , j) += b(i, t) * c(t , j)`
+- 循环结构: 最外层 `jBase` , `iBase` 然后进行`jBase`的分块， 然后再是t 遍历，最后是`iBase`的分块
+
+```c++
+for(int jBase = 0 ; jBase < n ; jBase += 16){
+	for(int iBase = 0; iBase < n; iBase += 16){
+    	for(int j = jBase ; j < jBase + 16 ; j++){
+        	for(int t = 0; t < n ; t++){
+            	for(int i = iBase; i < iBase + 16; i++){
+						a(i, j) += b(i, t) * c(t, j);
+            	}
+        	}
+    	}
+	}
+}
+```
+
+
+
+## kernel_convol.cpp 
+
+- 小内核卷积
+
+- a 结果 b (nkern填充padding) c (卷积核)
+
+```c++
+ndarray<2, float> a(n, n);
+ndarray<2, float, nkern> b(n, n);
+ndarray<2, float> c(nkern, nkern);
+```
+
+- 基础卷积 外面两层循环 `i, j` 代表结果 内部两层循环代表卷积核相乘
+
+```c++
+for(int j = 0; j < n; j++){
+    for(int i = 0 ;i < n; i++){
+        for(int l = 0; l < nkern ; l++){
+            for(int k = 0; k < nker ; k++){
+                a(i , j) += b( i + k , j + l) * c(k , l);
+            }
+        }
+    }
+}
+```
+
+- 循环分块 循环展开 
+- 最外层 `jBase` , `iBase` ， 然后是 `l , k`, 然后是`jBase` , `iBase`的分块结果
+
+```c++
+ constexpr int blockSize = 4;
+        for (int jBase = 0; jBase < n; jBase += blockSize) {
+            for (int iBase = 0; iBase < n; iBase += blockSize) {
+                for (int l = 0; l < nkern; l++) {
+                    for (int k = 0; k < nkern; k++) {
+                        for (int j = jBase; j < jBase + blockSize; j++) {
+#pragma GCC unroll 4
+                            for (int i = iBase; i < iBase + blockSize; i++) {
+                                a(i, j) += b(i + k, j + l) * c(i, j);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+```
+
