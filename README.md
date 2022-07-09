@@ -34,6 +34,10 @@
     - [grid_stride_loop.cu](#grid_stride_loopcu)
   - [矩阵转置](#矩阵转置)
     - [mat_trans.cpp](#mat_transcpp)
+    - [mat_trans_shared.cpp](#mat_trans_sharedcpp)
+  - [GPU优化手法总结](#gpu优化手法总结)
+- [参考资料](#参考资料)
+- [致谢](#致谢)
 
 # 并行计算项目概要
 
@@ -387,3 +391,53 @@ __global__ void parallel_transpose(T *out, T const *in, int nx, int ny) {
 }
 ```
 
+### mat_trans_shared.cpp
+
+> 利用共享内存解决跨步读取的问题
+
+- 通过把 输入分块，按块跨步地读，而块内部则仍是连续地读——从低效全局的内存读到高效的共享内存中，然后在共享内存中跨步地读，连续地写到 out 指向的低效的全局内存中。
+
+```c++
+template <int blockSize, class T>
+__global__ void parallel_transpose(T *out, T const *in, int nx, int ny) {
+    int x = blockIdx.x * blockSize + threadIdx.x;
+    int y = blockIdx.y * blockSize + threadIdx.y;
+    if (x >= nx || y >= ny) return;
+    __shared__ T tmp[blockSize * blockSize];
+    int rx = blockIdx.y * blockSize + threadIdx.x;
+    int ry = blockIdx.x * blockSize + threadIdx.y;
+    tmp[threadIdx.y * blockSize + threadIdx.x] = in[ry * nx + rx];
+    __syncthreads();
+    out[y * nx + x] = tmp[threadIdx.x * blockSize + threadIdx.y];
+}
+```
+
+
+
+## GPU优化手法总结
+
+| 优化手法                      | 具体实现                                                     |
+| ----------------------------- | ------------------------------------------------------------ |
+| 线程组分歧（wrap divergence） | 保证 32 个线程都进同样的分支，否则两个分支都会执行。         |
+| 延迟隐藏（latency hiding）    | 有足够的 `blockDim` 供 SM 在陷入内存等待时调度到其他线程组。 |
+| 寄存器打翻（register spill）  | 如果核函数用到很多局部变量（寄存器），则 blockDim 不宜太大。 |
+| 共享内存（shared memory）     | 全局内存比较低效，如果需要多次使用，可以先读到共享内存。     |
+| 跨步访问（coalesced access）  | 建议先顺序读到共享内存，让高带宽的共享内存来承受跨步。       |
+| 区块冲突（bank conflict）     | 同一个 warp 中多个线程访问共享内存中模 32 相等的地址会比较低效，可以把数组故意搞成不对齐的 33 跨步来避免。 |
+
+
+
+# 参考资料
+
+
+
+# 致谢 
+
+- 感谢小彭老师的parallel_101课程带我入门，本仓库辅助代码与作业代码大部分参考于小彭老师的并行计算课程仓库。
+
+> ​		https://github.com/archibate                  
+>
+> ​		https://github.com/parallel101
+
+- 感谢王小明同学的技术支持和耐心指导，在学习过程中碰到了各种奇奇怪怪的错误：环境安装出错，CMake出了bug，编译出错，内存爆炸，Debug失效。都在他的细心指导下一一解决，从对C++的一无所知到现在的浅入门庭，谢谢他的一路陪伴。
+> ​		https://qifanwang.github.io/
