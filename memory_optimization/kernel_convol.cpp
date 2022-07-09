@@ -81,3 +81,11 @@ void BM_convol_blocked_unrolled(benchmark::State &bm) {
 BENCHMARK(BM_convol_blocked_unrolled);
 
 BENCHMARK_MAIN();
+
+
+// ---------------------------------------------------------------------
+// Benchmark                           Time             CPU   Iterations
+// ---------------------------------------------------------------------
+// BM_convol                   111106456 ns    111079362 ns            6
+// BM_convol_blocked            54005707 ns     53992432 ns           13
+// BM_convol_blocked_unrolled   31759805 ns     31751336 ns           22
