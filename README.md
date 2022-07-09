@@ -1,5 +1,5 @@
-- [代码库说明](#代码库说明)
-- [mylib](#mylib)
+- [并行计算项目概要](#并行计算项目概要)
+- [mylib | 代码库](#mylib--代码库)
   - [帮手类](#帮手类)
     - [ticktock.h | bate.h | mtprint.h](#ticktockh--bateh--mtprinth)
     - [pod.h](#podh)
@@ -11,7 +11,7 @@
   - [代码环境](#代码环境)
   - [实验优化记录](#实验优化记录)
   - [优化方法总结](#优化方法总结)
-- [Memory_optimization](#memory_optimization)
+- [memory_optimization | 访存优化](#memory_optimization--访存优化)
   - [矩阵乘法优化](#矩阵乘法优化)
     - [matrix_mul.cpp](#matrix_mulcpp)
   - [小卷积核优化](#小卷积核优化)
@@ -26,14 +26,14 @@
     - [prefetch.cpp](#prefetchcpp)
     - [write_read.cpp | write_read_msvc.cpp](#write_readcpp--write_read_msvccpp)
     - [false_sharing.cpp](#false_sharingcpp)
-- [cuda_practice](#cuda_practice)
+- [cuda_practice | CUDA 实践](#cuda_practice--cuda-实践)
   - [include（辅助类）](#include辅助类)
     - [helper_cuda.h | helper_string.h](#helper_cudah--helper_stringh)
     - [CudaAllcator.h | CudaAllcator_MSVC.h](#cudaallcatorh--cudaallcator_msvch)
   - [网格跨步循环](#网格跨步循环)
     - [grid_stride_loop.cu](#grid_stride_loopcu)
 
-# 代码库说明
+# 并行计算项目概要
 
 > 实践：
 >
@@ -54,7 +54,7 @@
 | cuda_practice         | GPU cuda编程实践     | 矩阵乘法优化                |
 
 
-# mylib
+# mylib | 代码库
 
 ## 帮手类
 
@@ -173,7 +173,7 @@ tbb     17.48s    加速：7.66x
 
 
 
-# Memory_optimization
+# memory_optimization | 访存优化
 
 https://quick-bench.com/ benchmark在线测试网站
 
@@ -321,7 +321,7 @@ for(int j = 0; j < n; j++){
 
 
 
-# cuda_practice
+# cuda_practice | CUDA 实践
 
 ## include（辅助类）
 
