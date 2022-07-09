@@ -29,6 +29,7 @@
 - [cuda_practice](#cuda_practice)
   - [include（辅助类）](#include辅助类)
     - [helper_cuda.h | helper_string.h](#helper_cudah--helper_stringh)
+    - [CudaAllcator.h | CudaAllcator_MSVC.h](#cudaallcatorh--cudaallcator_msvch)
   - [网格跨步循环](#网格跨步循环)
     - [grid_stride_loop.cu](#grid_stride_loopcu)
 
@@ -330,17 +331,43 @@ for(int j = 0; j < n; j++){
 
   自动检查错误代码并打印在终端，退出。还会报告出错所在的行号，函数名等。
 
+### CudaAllcator.h | CudaAllcator_MSVC.h
 
+- `std::vector<int, CudaAllocator<int>> arr(n);`标准库容器在CUDA统一内存上构造。
+- MSVC版本根据微软的文档要求进行改造。
 
 ## 网格跨步循环
 
 ### grid_stride_loop.cu
 
-` blockDim.x * blockIdx.x + threadIdx.x` 获取线程在网格中的编号
+| 维度        | 意义                   |
+| ----------- | ---------------------- |
+| `gridDim`   | 总的板块数量           |
+| `blockIdx`  | 当前板块的编号         |
+| `blockDim`  | 当前板块中的线程数量   |
+| `threadIdx` | 当前线程在板块中的编号 |
+
+扁平化  `tid`获取线程在网格中的编号 `tnum` 总的线程数
+
+```c++
+unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
+unsigned int tnum = blockDim.x * gridDim.x;
+```
+
+- 无论调用者指定了多少个线程`（blockDim）`，都能自动根据给定的 `n` 区间循环，不会越界，也不会漏掉几个元素。
 
 ```c++
 for(int i = blockDim.x * blockIdx.x + threadIdx.x ; i < n; i += blockDim.x * gridDim.x){
         arr[i] = i;
 }
+```
+
+- 外部调用者，则是根据不同的 `n` 决定板块的数量`（gridDim）`，而每个板块具有的线程数量`（blockDim）`则是固定的 128。
+- 利用向上取整，解决边角料难题。`(n + threadsPerBlock -1)`
+
+```c++
+int threadsPerBlock = 128;
+int blocksPerGrid = (n + threadsPerBlock -1)/ threadsPerBlock;
+kernel<<<blocksPerGrid, threadsPerBlock>>>(arr, n);
 ```
 
