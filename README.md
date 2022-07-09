@@ -32,6 +32,8 @@
     - [CudaAllcator.h | CudaAllcator_MSVC.h](#cudaallcatorh--cudaallcator_msvch)
   - [网格跨步循环](#网格跨步循环)
     - [grid_stride_loop.cu](#grid_stride_loopcu)
+  - [矩阵转置](#矩阵转置)
+    - [mat_trans.cpp](#mat_transcpp)
 
 # 并行计算项目概要
 
@@ -369,5 +371,19 @@ for(int i = blockDim.x * blockIdx.x + threadIdx.x ; i < n; i += blockDim.x * gri
 int threadsPerBlock = 128;
 int blocksPerGrid = (n + threadsPerBlock -1)/ threadsPerBlock;
 kernel<<<blocksPerGrid, threadsPerBlock>>>(arr, n);
+```
+
+## 矩阵转置
+
+### mat_trans.cpp
+
+```c++
+template <class T>
+__global__ void parallel_transpose(T *out, T const *in, int nx, int ny) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= nx || y >= ny) return;
+    out[y * nx + x] = in[x * nx + y];
+}
 ```
 
