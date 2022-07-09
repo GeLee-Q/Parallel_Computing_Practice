@@ -10,7 +10,7 @@
 - [康威生命游戏优化](#康威生命游戏优化)
   - [代码环境](#代码环境)
   - [实验优化记录](#实验优化记录)
-  - [优化**方法总结**](#优化方法总结)
+  - [优化方法总结](#优化方法总结)
 - [Memory_optimization](#memory_optimization)
   - [矩阵乘法优化](#矩阵乘法优化)
     - [matrix_mul.cpp](#matrix_mulcpp)
@@ -26,6 +26,11 @@
     - [prefetch.cpp](#prefetchcpp)
     - [write_read.cpp | write_read_msvc.cpp](#write_readcpp--write_read_msvccpp)
     - [false_sharing.cpp](#false_sharingcpp)
+- [cuda_practice](#cuda_practice)
+  - [include（辅助类）](#include辅助类)
+    - [helper_cuda.h | helper_string.h](#helper_cudah--helper_stringh)
+  - [网格跨步循环](#网格跨步循环)
+    - [grid_stride_loop.cu](#grid_stride_loopcu)
 
 # 代码库说明
 
@@ -33,8 +38,8 @@
 >
 > - 康威生命游戏优化
 >
-> - 矩阵乘法优化 小内核卷积优化（X86_CPU ）
-
+> - 矩阵乘法优化 小内核卷积优化（X86_CPU）
+> - CUDA实践 矩阵乘法 （RTX2060）
 
 
 | 文件                  | 作用                 | 具体优化                    |
@@ -45,7 +50,7 @@
 |                       |                      |                             |
 | src                   | 康威生命游戏源码文件 | 并行优化+稀疏数据结构       |
 | memory_optimization   | 访存优化代码         | 矩阵乘法优化+小内核卷积优化 |
-|                       |                      |                             |
+| cuda_practice         | GPU cuda编程实践     | 矩阵乘法优化                |
 
 
 # mylib
@@ -135,7 +140,7 @@ tbb     17.48s    加速：7.66x
  tbb    17.76s    加速：7.54x
 ```
 
-## 优化**方法总结**
+## 优化方法总结
 
 **封装稀疏网格的 Grid 类的？**
 
@@ -314,4 +319,28 @@ for(int j = 0; j < n; j++){
 - 错误共享只会发生在**写入**的情况，如果多个核心同时**读取**两个很靠近的变量，是不会产生冲突的，也没有性能损失。
 
 
+
+# cuda_practice
+
+## include（辅助类）
+
+### helper_cuda.h | helper_string.h
+
+- 定义了 `checkCudaErrors` 这个宏，使用时只需：`checkCudaErrors(cudaDeviceSynchronize())`
+
+  自动检查错误代码并打印在终端，退出。还会报告出错所在的行号，函数名等。
+
+
+
+## 网格跨步循环
+
+### grid_stride_loop.cu
+
+` blockDim.x * blockIdx.x + threadIdx.x` 获取线程在网格中的编号
+
+```c++
+for(int i = blockDim.x * blockIdx.x + threadIdx.x ; i < n; i += blockDim.x * gridDim.x){
+        arr[i] = i;
+}
+```
 
