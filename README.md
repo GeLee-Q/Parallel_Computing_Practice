@@ -208,6 +208,7 @@ for(int jBase = 0 ; jBase < n ; jBase += 16){
 	}
 }
 ```
+![dataset](figs/cpu_mul.jpg)
 
 ## 小卷积核优化
 
@@ -257,7 +258,7 @@ for(int j = 0; j < n; j++){
             }
         }
 ```
-
+![dataset](figs/cpu_convol.jpg)
 
 
 ## aosoa数据结构
