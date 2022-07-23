@@ -371,6 +371,7 @@ for(int i = blockDim.x * blockIdx.x + threadIdx.x ; i < n; i += blockDim.x * gri
 
 - 外部调用者，则是根据不同的 `n` 决定板块的数量`（gridDim）`，而每个板块具有的线程数量`（blockDim）`则是固定的 128。
 - 利用向上取整，解决边角料难题。`(n + threadsPerBlock -1)`
+- 如果利用了冗余的线程，那么在核函数中就要加上判断 `idx < n ` （for循环的作用）用于判断越界
 
 ```c++
 int threadsPerBlock = 128;
