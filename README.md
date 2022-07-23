@@ -33,7 +33,7 @@
   - [网格跨步循环](#网格跨步循环)
     - [grid_stride_loop.cu](#grid_stride_loopcu)
   - [矩阵转置](#矩阵转置)
-    - [mat_trans.cpp](#mat_transcpp)
+    - [mat_trans.cu  | thrust_trans.cu](#mat_transcu---thrust_transcu)
     - [mat_trans_shared.cpp](#mat_trans_sharedcpp)
   - [GPU优化手法总结](#gpu优化手法总结)
 - [参考资料](#参考资料)
@@ -381,7 +381,8 @@ kernel<<<blocksPerGrid, threadsPerBlock>>>(arr, n);
 
 ## 矩阵转置
 
-### mat_trans.cpp
+### mat_trans.cu  | thrust_trans.cu
+- `thrust_trans.cu` 基于`thrust`库写的转置版本
 
 ```c++
 template <class T>
