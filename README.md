@@ -34,7 +34,10 @@
     - [grid_stride_loop.cu](#grid_stride_loopcu)
   - [矩阵转置](#矩阵转置)
     - [mat_trans.cu  | thrust_trans.cu](#mat_transcu---thrust_transcu)
-    - [mat_trans_shared.cpp](#mat_trans_sharedcpp)
+    - [mat_trans_shared.cu](#mat_trans_sharedcu)
+  - [矩阵乘法](#矩阵乘法)
+    - [mat_mul.cu](#mat_mulcu)
+    - [mat_mul_shared.cu](#mat_mul_sharedcu)
   - [GPU优化手法总结](#gpu优化手法总结)
 - [参考资料](#参考资料)
 - [致谢](#致谢)
@@ -394,7 +397,7 @@ __global__ void parallel_transpose(T *out, T const *in, int nx, int ny) {
 }
 ```
 
-### mat_trans_shared.cpp
+### mat_trans_shared.cu
 
 > 利用共享内存解决跨步读取的问题
 
@@ -415,7 +418,71 @@ __global__ void parallel_transpose(T *out, T const *in, int nx, int ny) {
 }
 ```
 
+## 矩阵乘法
 
+### mat_mul.cu
+
+>cpu_time: 18.342873s
+ gpu_mul: 0.138261s
+
+
+```c++
+template <int blockSize, class T>
+__global__ void parallel_mul(T * c, T const * a , T const * b, int M, int N, int K) {
+    int m = threadIdx.x + blockIdx.x * blockDim.x;
+    int n = threadIdx.y + blockIdx.y * blockDim.y;
+
+    if(m >= M || n >= N) return;
+
+    int tmp = 0;
+    for(int t = 0 ; t < K; t++){
+        tmp += a[m * K + t] * b[t * N + n];
+    } 
+
+    c[m * N + n] = tmp;
+}
+```
+
+### mat_mul_shared.cu
+
+>cpu_time: 22.308820s
+ gpu_mul: 0.031329s
+
+
+```c++
+template <int BLOCK_SIZE, class T>
+__global__ void parallel_mul_shared_chiemon(T * c, T const * a , T const * b, int M, int N, int K){
+    int nRow = blockIdx.y * blockDim.y + threadIdx.y;
+    int nCol = blockIdx.x * blockDim.x + threadIdx.x;
+    int fCVal = 0.0f;
+
+    __shared__ float shTileA[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float shTileB[BLOCK_SIZE][BLOCK_SIZE];
+
+    int nIter = (K + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    for(int i = 0; i < nIter; i++)
+    {
+        // load data from global memory to shared memory
+        shTileA[threadIdx.y][threadIdx.x] = a[nRow * K + i * BLOCK_SIZE + threadIdx.x];
+        shTileB[threadIdx.y][threadIdx.x] = b[(i * BLOCK_SIZE + threadIdx.y) * N + nCol];
+
+        // sync to wait for all threads in one block to finish loading datas
+        __syncthreads();
+
+        // sub-matrix multiply
+        for(int l = 0; l < BLOCK_SIZE; l++)
+        {
+            fCVal += shTileA[threadIdx.y][l] * shTileB[l][threadIdx.x];
+        }
+
+        // sync to wait for all threads in one block to finish compute
+        __syncthreads();
+    }
+
+    // store results into global memory
+    c[nRow * N + nCol] = fCVal;
+}
+```
 
 ## GPU优化手法总结
 
